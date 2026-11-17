@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Build and run M4-03A checks only against verified private resources."""
+import argparse
+import datetime
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+
+import m403a_environment as runtime
+
+ROOT, OUT, RUNTIME = runtime.ROOT, runtime.OUT, runtime.RUNTIME
+
+
+def run(command, folder, name, env):
+    started = runtime.stamp()
+    samples = []
+    safety_error = None
+    log_path = folder / (name + '.log')
+    with log_path.open('x') as log:
+        child = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)
+        while child.poll() is None:
+            try:
+                samples.append(runtime.budget())
+            except RuntimeError as error:
+                safety_error = str(error)
+                child.terminate()
+                try:
+                    child.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                break
+            time.sleep(2)
+    code = child.wait()
+    value = {'command': command, 'started_at': started, 'completed_at': runtime.stamp(),
+             'exit_code': code, 'log': str(log_path.relative_to(ROOT)), 'safety_error': safety_error,
+             'resource_samples': samples}
+    (folder / (name + '.json')).write_text(json.dumps(value, indent=2) + chr(10))
+    print(json.dumps({key: value[key] for key in ['command', 'exit_code', 'log', 'safety_error']}), flush=True)
+    if code or safety_error:
+        raise RuntimeError('Check failed: ' + str(log_path.relative_to(ROOT)))
+    return value
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('mode', choices=['build', 'focused', 'regression', 'static'])
+    parser.add_argument('--run', default='^TestM403A')
+    args = parser.parse_args()
+    env = runtime.environment()
+    folder = OUT / 'runs' / (datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ') + '-' + args.mode)
+    folder.mkdir(parents=True)
+    (folder / 'environment.json').write_text(json.dumps(runtime.verify(), indent=2) + chr(10))
+    # All regression evidence stays under this new attempt, never old M4/M5 paths.
+    env.update(TICKETPULSE_M403A_EVIDENCE_DIR=str(folder / 'verification'),
+               TICKETPULSE_M4_EVIDENCE_DIR=str(folder / 'm4'),
+               TICKETPULSE_M503_EVIDENCE_DIR=str(folder / 'm503'),
+               TICKETPULSE_M504_EVIDENCE_DIR=str(folder / 'm504'))
+    (RUNTIME / 'bin').mkdir(exist_ok=True)
+    results = []
+    if args.mode in ['build', 'focused', 'regression']:
+        for target in ['ticketpulse', 'ticketpulse-sync', 'ticketpulse-control', 'ticketpulse-rebuild']:
+            results.append(run(['go', 'build', '-race', '-o', str(RUNTIME / 'bin' / target), './cmd/' + target], folder, 'build-' + target, env))
+    if args.mode in ['focused', 'regression']:
+        regex = args.run if args.mode == 'focused' else '.'
+        tags = 'integration,m2,m3,m4,m403a' if args.mode == 'focused' else 'integration,m2,m3,m4'
+        results.append(run(['go', 'test', '-race', '-count=1', '-timeout=20m', '-v', '-tags=' + tags,
+                            './internal/mysqlstore', '-run=' + regex], folder, 'integration', env))
+        if args.mode == 'regression':
+            results.append(run(['go', 'test', '-race', '-count=1', '-timeout=5m', '-v', '-tags=' + tags,
+                                './internal/syncpipe'], folder, 'syncpipe-integration', env))
+    if args.mode == 'static':
+        results.append(run(['go', 'test', '-race', '-count=1', './...'], folder, 'unit-race', env))
+        results.append(run(['go', 'vet', './...'], folder, 'vet', env))
+        results.append(run(['python3', '-m', 'unittest', 'discover', '-s', 'scripts', '-p', '*_test.py'], folder, 'python-tests', env))
+    (folder / 'summary.json').write_text(json.dumps({'state': 'PASS', 'results': results}, indent=2) + chr(10))
+    print('PASS ' + str(folder.relative_to(ROOT)))
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,11 @@
+{
+  "name": "ticketpulse-web-verification",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0"
+  }
+}

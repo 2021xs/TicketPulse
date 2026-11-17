@@ -1,0 +1,36 @@
+# Private service instances, credentials, datasets and immutable test binaries.
+/.local/
+/bin/
+.env
+.env.*
+*.local.env
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime evidence is retained locally, including artifacts emitted inside Go packages.
+artifacts/
+*.log
+*.out
+*.test
+*.prof
+*.pprof
+coverage.out
+coverage/
+
+# Dependency installs and browser/Python outputs.
+node_modules/
+test-results/
+playwright-report/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.DS_Store
+
+# Interrupted downloads and editor scratch files.
+*.partial
+*.tmp
+*.swp
+*~

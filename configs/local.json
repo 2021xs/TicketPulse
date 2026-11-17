@@ -1,0 +1,6 @@
+{
+  "categories": ["network", "account", "device", "software", "other"],
+  "priorities": ["urgent", "high", "medium", "low"],
+  "category_teams": {"network": 10, "account": 10, "device": 20, "software": 10},
+  "default_team_id": 90
+}

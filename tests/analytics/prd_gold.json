@@ -1,0 +1,64 @@
+{
+  "source": "PRD v0.2 §10.2 independent hand calculations; no production SQL/function used",
+  "start": "2026-11-01",
+  "end": "2026-11-04",
+  "daily": [
+    {
+      "date": "2026-11-01",
+      "created": 4,
+      "first_resolved": 1,
+      "average_first_resolution_seconds": 7200
+    },
+    {
+      "date": "2026-11-02",
+      "created": 3,
+      "first_resolved": 2,
+      "average_first_resolution_seconds": 45000
+    },
+    {
+      "date": "2026-11-03",
+      "created": 3,
+      "first_resolved": 3,
+      "average_first_resolution_seconds": 88800
+    }
+  ],
+  "overview": {
+    "created": 10,
+    "first_resolved": 6,
+    "average_first_resolution_seconds": 60600,
+    "current_backlog": 5
+  },
+  "teams": {
+    "10": {
+      "created": 7,
+      "first_resolved": 4,
+      "current_backlog": 1
+    },
+    "20": {
+      "created": 3,
+      "first_resolved": 2,
+      "current_backlog": 4
+    }
+  },
+  "team_backlog_ids": {
+    "10": [
+      10
+    ],
+    "20": [
+      3,
+      4,
+      6,
+      8
+    ]
+  },
+  "initial_team_a_created_nov1": 3,
+  "first_resolution_by_team_nov2": {
+    "10": 1,
+    "20": 1
+  },
+  "first_resolution_by_team_nov3": {
+    "10": 2,
+    "20": 1
+  },
+  "histories": 46
+}

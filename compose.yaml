@@ -1,0 +1,18 @@
+services:
+  mysql:
+    image: mysql:8.4.5
+    environment:
+      MYSQL_DATABASE: ticketpulse_local
+      MYSQL_USER: ticketpulse
+      MYSQL_PASSWORD: ${TP_MYSQL_PASSWORD:?set TP_MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${TP_MYSQL_ROOT_PASSWORD:?set TP_MYSQL_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:33306:3306"
+    command: ["--mysqlx=0", "--server-id=1", "--log-bin=ticketpulse-bin", "--binlog-format=ROW", "--binlog-row-image=FULL", "--binlog-row-metadata=FULL", "--sync-binlog=1", "--binlog-expire-logs-seconds=604800", "--innodb-buffer-pool-size=64M", "--innodb-flush-log-at-trx-commit=1"]
+    volumes:
+      - ticketpulse_mysql:/var/lib/mysql
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./db/login_seed.sql:/docker-entrypoint-initdb.d/03-login-seed.sql:ro
+volumes:
+  ticketpulse_mysql:
